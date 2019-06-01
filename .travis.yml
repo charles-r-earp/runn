@@ -1,0 +1,19 @@
+---
+cache: cargo
+dist: xenial
+env: 
+  global: 
+    - CRATE_NAME=runn
+install: 
+  - sudo apt update
+  - source ~/.cargo/env || true
+language: rust
+env: TARGET=x86_64-unknown-linux-gnu
+notifications: 
+  email: 
+    on_success: never
+script:
+  - cargo test
+  - cargo test --features native
+  - cargo build --release --features native
+sudo: required
