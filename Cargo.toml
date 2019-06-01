@@ -1,0 +1,20 @@
+[package]
+name = "runn"
+version = "0.0.1"
+authors = ["Charles R Earp <charles.r.earp@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+ndarray = "0.12.1"
+cpp = { version = "0.4", optional = true }
+
+[build-dependencies]
+cpp_build = { version = "0.4", optional = true }
+
+[features]
+native = []
+#cuda = ["cpp", "cpp_build"]
+#cudnn = ["cuda"]
+#opencl = ["cpp", "cpp_build"]
+#clnn = ["opencl"]
+
