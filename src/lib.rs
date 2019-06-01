@@ -3,7 +3,6 @@
 #[cfg(feature="native")]
 pub mod native;
 use std::fmt;
-use ndarray::{ArrayBase, Array, Data, Dimension};
 
 pub trait Executor: fmt::Display + fmt::Debug {}
 

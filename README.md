@@ -1,6 +1,10 @@
 # runn
 Provides Rust with useful functions for Neural Networks, with CUDA and OpenCL support.
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/charles-r-earp/runn/LICENSE)
+
+[![Build Status](https://travis-ci.com/charles-r-earp/runn.svg?branch=master)](https://travis-ci.com/charles-r-earp/runn)
+
 ## Status
 In Early Developement
 
