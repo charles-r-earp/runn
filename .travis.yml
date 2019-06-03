@@ -8,6 +8,7 @@ install:
   - sudo apt update
   - sudo apt install -y mesa-opencl-icd libpcap-dev clinfo
   - clinfo
+  - sudo apt install -y locate
   - locate libOpenCL
   - source ~/.cargo/env || true
 language: rust
