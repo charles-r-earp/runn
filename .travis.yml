@@ -6,7 +6,7 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
-  - sudo install pocl clinfo
+  - sudo install -y libpocl-dev clinfo
   - clinfo
   - source ~/.cargo/env || true
 language: rust
@@ -16,4 +16,5 @@ notifications:
     on_success: never
 script:
   - cargo test
+  - cargo build --release
 sudo: required

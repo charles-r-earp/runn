@@ -12,6 +12,22 @@ em::emu!{
       global_y[get_global_id(0)] = 0.;
     }
   }
+  relu_grad(global_y [f32], global_x [f32]) {
+    if global_x[get_global_id(0)] > 0. { 
+      global_y[get_global_id(0)] = 1.; 
+    }
+    else { 
+      global_y[get_global_id(0)] = 0.;
+    }
+  }
+  relu_inplace_grad(global_y [f32]) {
+    if global_y[get_global_id(0)] > 0. {
+      global_y[get_global_id(0)] = 1.;
+    }
+    else {
+      global_y[get_global_id(0)] = 0.;
+    }
+  }
 }
 
 pub fn emu() -> &'static str { EMU }
@@ -23,10 +39,12 @@ pub mod opencl {
   pub trait Relu {
     type Output;
     fn relu(&self) -> Self::Output;
+    fn relu_grad(&self) -> Self::Output;
   }
   
   pub trait ReluInplace {
     fn relu_inplace(&mut self);
+    fn relu_grad_inplace(&mut self);
   }
   
   impl<S, D> Relu for ndarray::ArrayBase<S, D>
@@ -44,6 +62,17 @@ pub mod opencl {
           .unwrap());
       y
     }
+    fn relu_grad(&self) -> Self::Output {
+      let mut dy = unsafe { Self::Output::uninitialized(self.dim()) };
+      scalar_func(
+        emu(), 
+        "relu_grad", 
+        dy.as_slice_mut()
+          .unwrap(), 
+        self.as_slice()
+          .unwrap());
+      dy
+    }
   }
   
   impl<S, D> ReluInplace for ndarray::ArrayBase<S, D>
@@ -53,6 +82,13 @@ pub mod opencl {
       scalar_func_inplace(
         emu(), 
         "relu_inplace", 
+        self.as_slice_mut()
+          .unwrap());
+    }
+    fn relu_grad_inplace(&mut self) {
+      scalar_func_inplace(
+        emu(), 
+        "relu_inplace_grad", 
         self.as_slice_mut()
           .unwrap());
     }
@@ -69,11 +105,25 @@ pub mod opencl {
       assert_eq!(x.relu(), y, "{}", emu());
     }
     #[test]
+    fn relu_grad() {
+      use super::Relu;
+      let x: ndarray::Array2<f32> = ndarray::arr2(&[[0., -0.5, 1.5]]);
+      let dy = ndarray::arr2(&[[0., 0., 1.]]);
+      assert_eq!(x.relu_grad(), dy, "{}", emu());
+    }
+    #[test]
     fn relu_inplace() {
       use super::ReluInplace;
-      let mut x: ndarray::Array2<f32> = ndarray::arr2(&[[0., -1., 1.]]);
-      x.relu_inplace();
-      assert_eq!(x, ndarray::arr2(&[[0., 0., 1.]]), "{}", emu());
+      let mut y: ndarray::Array2<f32> = ndarray::arr2(&[[0., -1., 1.]]);
+      y.relu_inplace();
+      assert_eq!(y, ndarray::arr2(&[[0., 0., 1.]]), "{}", emu());
+    }
+    #[test]
+    fn relu_grad_inplace() {
+      use super::ReluInplace;
+      let mut y: ndarray::Array2<f32> = ndarray::arr2(&[[0., -0.5, 1.5]]);
+      y.relu_grad_inplace();
+      assert_eq!(y, ndarray::arr2(&[[0., 0., 1.]]), "{}", emu());
     }
   }
 }

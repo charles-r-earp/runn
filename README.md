@@ -9,7 +9,6 @@ Useful functions for Neural Networks for CPU / GPU targets.
 Currently emu only supports OpenCL and f32 is the only floating point type. Traits are implemented on ndarray::ArrayBase.
 
 - Activations
-  - Relu 
-  - ReluInplace
+  - Relu (+Inplace, +Grad)
 
 
