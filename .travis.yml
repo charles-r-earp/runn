@@ -8,6 +8,7 @@ install:
   - sudo apt update
   - sudo apt install -y mesa-opencl-icd libpcap-dev clinfo
   - clinfo
+  - sudo ldconfig -v
   - source ~/.cargo/env || true
 language: rust
 env: TARGET=x86_64-unknown-linux-gnu
