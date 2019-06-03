@@ -6,6 +6,8 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
+  - sudo install pocl clinfo
+  - clinfo
   - source ~/.cargo/env || true
 language: rust
 env: TARGET=x86_64-unknown-linux-gnu
@@ -14,6 +16,4 @@ notifications:
     on_success: never
 script:
   - cargo test
-  - cargo test --features native
-  - cargo build --release --features native
 sudo: required
