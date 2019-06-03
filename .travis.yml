@@ -6,7 +6,7 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
-  - sudo apt install -y libpcap-dev clinfo
+  - sudo apt install -y opencl-icd libpcap-dev clinfo
   - clinfo
   - source ~/.cargo/env || true
 language: rust
