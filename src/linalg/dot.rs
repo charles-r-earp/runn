@@ -1,7 +1,8 @@
 em::emu!{
-  vdot(global_y [f32], global_x1 [f32], global_x2 [f32]) {
-    global_y[0] += global_x1[get_global_id(0)] * global_x2[get_global_id(0)];
+  vdot_partial(local_y [f32], global_x1 [f32], global_x2 [f32]) {
+    local_y[get_local_id(0)] = global_x1[get_global_id(0)] * global_x2[get_global_id(0)];
   }
+  vdot_sum(global_y, global_
 }
 
 pub fn emu() -> &'static str { EMU }
@@ -39,7 +40,7 @@ pub mod opencl {
         .copy_host_slice(rhs.as_slice().unwrap())
         .build()
         .unwrap();
-      let kernel = pro_que.kernel_builder("vdot")
+      let kernel = pro_que.kernel_builder("mul")
         .arg(&y_buffer)
         .arg(&x1_buffer)
         .arg(&x2_buffer)

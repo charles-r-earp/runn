@@ -34,7 +34,7 @@ pub fn emu() -> &'static str { EMU }
 
 pub mod opencl {
   use super::emu;
-  use super::super::opencl::{scalar_func, scalar_func_inplace};
+  use super::super::opencl::{unary, unary_inplace};
   
   pub trait Relu {
     type Output;
@@ -53,7 +53,7 @@ pub mod opencl {
     type Output = ndarray::Array<f32, D>;
     fn relu(&self) -> Self::Output {
       let mut y = unsafe { Self::Output::uninitialized(self.dim()) };
-      scalar_func(
+      unary(
         emu(), 
         "relu", 
         y.as_slice_mut()
@@ -64,7 +64,7 @@ pub mod opencl {
     }
     fn relu_grad(&self) -> Self::Output {
       let mut dy = unsafe { Self::Output::uninitialized(self.dim()) };
-      scalar_func(
+      unary(
         emu(), 
         "relu_grad", 
         dy.as_slice_mut()
@@ -79,14 +79,14 @@ pub mod opencl {
     where S: ndarray::DataMut<Elem=f32>,
           D: ndarray::Dimension {
     fn relu_inplace(&mut self) {
-      scalar_func_inplace(
+      unary_inplace(
         emu(), 
         "relu_inplace", 
         self.as_slice_mut()
           .unwrap());
     }
     fn relu_grad_inplace(&mut self) {
-      scalar_func_inplace(
+      unary_inplace(
         emu(), 
         "relu_inplace_grad", 
         self.as_slice_mut()

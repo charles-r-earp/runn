@@ -1,2 +1,3 @@
-pub mod scalar;
-pub mod linalg;
+pub mod elementwise;
+//pub mod linalg;
+//pub mod reduce;

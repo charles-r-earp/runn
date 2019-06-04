@@ -11,7 +11,8 @@ Install OpenCL such that clinfo lists a device. Currently the first platform -> 
 # Features 
 Currently emu only supports OpenCL and f32 is the only floating point type. Traits are implemented on ndarray::ArrayBase.
 
-- Activations
+- Elementwise
   - Relu (+Inplace, +Grad)
+  - Mul
 
 
