@@ -6,7 +6,7 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
-  - sudo apt install -y clinfo hwloc
+  - sudo apt install -y clinfo libhwloc-dev
   - clinfo
   - git clone https://github.com/pocl/pocl
   - cd pocl
