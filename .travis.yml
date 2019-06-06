@@ -6,13 +6,13 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
-  - sudo apt install -y ocl-icd-opencl-dev clinfo
+  - sudo apt install -y clinfo hwloc
   - clinfo
   - git clone https://github.com/pocl/pocl
   - cd pocl
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_ICD=OFF 
   - sudo make install
   - clinfo
   - source ~/.cargo/env || true
