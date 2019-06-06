@@ -12,7 +12,8 @@ install:
   - cd pocl
   - mkdir build
   - cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_ICD=ON
+  - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_ICD=ON
+  - make -j3
   - sudo make install
   - clinfo
   - source ~/.cargo/env || true
@@ -22,7 +23,5 @@ notifications:
   email: 
     on_success: never
 script:
-  #- cargo test
-  #- cargo run
-  #- cargo run --release
+  - cargo build
 sudo: required
