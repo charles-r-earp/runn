@@ -12,7 +12,7 @@ install:
   - cd pocl
   - mkdir build
   - cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_ICD=OFF 
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
   - sudo make install
   - clinfo
   - source ~/.cargo/env || true
@@ -22,7 +22,7 @@ notifications:
   email: 
     on_success: never
 script:
-  - cargo test
-  - cargo run
-  - cargo run --release
+  #- cargo test
+  #- cargo run
+  #- cargo run --release
 sudo: required
