@@ -1,115 +1,210 @@
 pub mod activation;
-use std::ops;
+use std::iter;
 
 pub fn emu() -> String { activation::emu() }
 
-pub struct Tensor<T: ocl::OclPrm, D: ndarray::Dimension> {
-  shape: ndarray::Shape<D>,
-  data: Vec<T>,
-  buffer: ocl::Buffer<T>
-}
-
-impl<T: ocl::OclPrm + Copy, S: ndarray::Data<Elem=T>, D: ndarray::Dimension> From<ndarray::ArrayBase<S, D>> for Tensor<T, D> {
-  #[inline]
-  fn from(array: ndarray::ArrayBase<S, D>) -> Self {
-    use ndarray::ShapeBuilder;
-    let shape = array.raw_dim().into_shape();
-    let mut data = Vec::with_capacity(array.len());
-    unsafe { data.set_len(array.len()); }
-    data.copy_from_slice(array.as_slice().unwrap());
-    let ref mut pro_que = Backend::pro_que();
-    pro_que.set_dims(data.len());
-    let mut buffer = pro_que
-      .buffer_builder()
-      .copy_host_slice(&data) 
-      .build()
-      .unwrap();
-    Self{shape, data, buffer}
-  }
-}
-
-impl<T: ocl::OclPrm, D: ndarray::Dimension> Tensor<T, D> {
-  #[inline]
-  fn new<S: ndarray::ShapeBuilder<Dim=D>>(shape: ndarray::Shape<D>) -> Self {
-    use ndarray::ShapeBuilder;
-    let shape = shape.into_shape();
-    let mut buffer = Backend::pro_que()
-      .buffer_builder()
-      .len(shape.size()) 
-      .build()
-      .unwrap();
-    Self{shape, data: Vec::new(), buffer}
-  }
-  #[inline]
-  pub fn into_array(self) -> ndarray::Array<T, D> {
-    let mut array = unsafe { ndarray::Array::uninitialized(self.shape) };
-    self.buffer
-      .read(array.as_slice_mut().unwrap())
-      .enq()
-      .unwrap();
-    array
-  }
-  #[inline]
-  pub fn buffer(&self) -> &ocl::Buffer<T> {
-    &self.buffer
-  }
-}
-
 pub struct Backend {
-  pro_que: ocl::ProQue,
+  context: ocl::Context,
+  program: ocl::Program,
 }
-
-static mut _backend: Option<Backend> = None;
 
 impl Backend {
   #[inline]
-  pub fn create() {
-    if unsafe { _backend.is_none() } {
-      let pro_que = ocl::builders::ProQueBuilder::new()
+  pub fn new() -> Self {
+    let context = ocl::builders::ContextBuilder::new()
+      .build()
+      .unwrap();
+    let program = ocl::builders::ProgramBuilder::new()
         .src(emu())
-        .build()
+        .build(&context)
         .unwrap();
-      unsafe { _backend = Some(Self{pro_que}); }
-    }
+    Self{context, program}
   }
   #[inline]
-  pub fn pro_que() -> &'static mut ocl::ProQue {
-    unsafe {
-      &mut _backend.as_mut()
-        .unwrap()
-        .pro_que
+  pub fn program(&self) -> &ocl::Program { &self.program } 
+  #[inline]
+  pub fn context(&self) -> &ocl::Context { &self.context }
+  #[inline]
+  pub fn queue(&self) -> ocl::Queue {
+    ocl::Queue::new(
+      &self.context,
+      self.context.devices()[0],
+      Some(ocl::flags::CommandQueueProperties::new())
+    ).unwrap()
+  }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Shape {
+  dims: Vec<usize>
+}
+
+impl Shape {
+  pub fn new(s: impl AsRef<[usize]>) -> Self {
+    Self{dims: s.as_ref().to_vec()}
+  }
+  pub fn size(&self) -> usize {
+    self.dims.iter().product::<usize>()
+  }
+}
+
+pub trait Buffer {
+  fn len(&self) -> usize;
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum HostBuffer {
+  F32(Vec<f32>),
+  I32(Vec<i32>)
+}
+
+impl Buffer for HostBuffer {
+  #[inline]
+  fn len(&self) -> usize {
+    use HostBuffer::*; 
+    match self {
+      F32(v) => v.len(),
+      I32(v) => v.len()
     }
   }
 }
 
+pub enum DeviceBuffer {
+  F32(ocl::Buffer<f32>),
+  I32(ocl::Buffer<i32>)
+}
+
+impl Buffer for DeviceBuffer {
+  #[inline]
+  fn len(&self) -> usize {
+    use DeviceBuffer::*; 
+    match self {
+      F32(v) => v.len(),
+      I32(v) => v.len()
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Tensor<B> {
+  buffer: B,
+  shape: Shape
+}
+
+impl<B> Tensor<B> {
+  #[inline]
+  pub fn new(buffer: B, shape: Shape) -> Self
+    where B: Buffer {
+    debug_assert_eq!(buffer.len(), shape.size());
+    Self{buffer, shape}
+  }
+  #[inline]
+  pub fn buffer(&self) -> &B {
+    &self.buffer
+  }
+  #[inline]
+  pub fn shape(&self) -> &Shape {
+    &self.shape
+  }
+}
+
+impl Tensor<HostBuffer> {
+  #[inline]
+  fn to_device<'b>(&self, backend: &'b Backend) -> Tensor<DeviceBuffer> {
+    match &self.buffer {
+      HostBuffer::F32(v) => {
+        let buffer = ocl::builders::BufferBuilder::new()
+          .queue(backend.queue())
+          .len(v.len())
+          .build()
+          .unwrap();
+        buffer.write(&*v)
+          .enq()
+          .unwrap();
+        Tensor::new(DeviceBuffer::F32(buffer), self.shape.clone())
+      },
+      HostBuffer::I32(v) => {
+        let buffer = ocl::builders::BufferBuilder::new()
+          .queue(backend.queue())
+          .len(v.len())
+          .build()
+          .unwrap();
+        buffer.write(&*v)
+          .enq()
+          .unwrap();
+        Tensor::new(DeviceBuffer::I32(buffer), self.shape.clone())
+      },
+    }
+  }
+}
+
+impl Tensor<DeviceBuffer> {
+  #[inline]
+  fn to_host(&self) -> Tensor<HostBuffer> {
+    match &self.buffer {
+      DeviceBuffer::F32(buffer) => {
+        let mut v = Vec::<f32>::with_capacity(buffer.len());
+        unsafe { v.set_len(v.capacity()); }
+        buffer.read(&mut v)
+          .enq()
+          .unwrap();
+        Tensor::new(HostBuffer::F32(v), self.shape.clone())
+      },
+      DeviceBuffer::I32(buffer) => {
+        let mut v = Vec::<i32>::with_capacity(buffer.len());
+        unsafe { v.set_len(v.capacity()); }
+        buffer.read(&mut v)
+          .enq()
+          .unwrap();
+        Tensor::new(HostBuffer::I32(v), self.shape.clone())
+      }
+    }
+  }
+}
+
+pub trait Layer: 'static {
+  fn eval<'b, 'x>(&mut self, backend: &'b Backend, kernels: &mut Vec<ocl::Kernel>, xs: Vec<&'x Tensor<DeviceBuffer>>) -> Vec<&Tensor<DeviceBuffer>>;
+}
+  
+pub struct Net {
+  layer: Box<Layer>
+} 
+
+impl Net {
+  #[inline]
+  pub fn new(layer: Box<Layer>) -> Self { Self{layer} }
+  #[inline]
+  pub fn eval<'b>(&mut self, backend: &'b Backend, host_xs: Vec<Tensor<HostBuffer>>) -> Vec<Tensor<HostBuffer>> {
+    use iter::FromIterator;
+    let device_xs = Vec::from_iter(host_xs.iter()
+      .map(|x| x.to_device(backend)));
+    let device_xs_ref: Vec<&Tensor<DeviceBuffer>> = Vec::from_iter(device_xs.iter()
+      .map(|x| x));
+    let mut kernels = Vec::new();
+    let device_ys = (*self.layer)
+      .eval(backend, &mut kernels, device_xs_ref);
+    kernels.into_iter()
+      .for_each(|k| unsafe { k.enq().unwrap(); });
+    Vec::from_iter(device_ys.iter()
+      .map(|y| y.to_host()))
+  }
+}
+  
 #[cfg(test)]
 mod tests {
-  use super::{Backend, Tensor};
+  use super::{Backend, Shape, Tensor, HostBuffer};
   
   #[test]
   fn test_backend() {
-    Backend::create();
+    let backend = Backend::new();
   }
   
   #[test]
-  fn test_tensor() {
-    Backend::create();
-    let x = ndarray::Array1::<f32>::ones(1000);
-    let y = Tensor::from(x.clone())
-      .into_array();
-    assert_eq!(y, x);
-  }
-  
-  #[test]
-  fn test_sequential() {
-    use super::activation::array_sigmoid;
-    Backend::create();
-    let x = ndarray::Array1::<f32>::ones(1000);
-    let y = Tensor::from(x.clone())
-      .sigmoid()
-      .sigmoid()
-      .into_array();
-    assert_eq!(y, array_sigmoid(array_sigmoid(x)));
+  fn test_tensor_f32() {
+    let backend = Backend::new();
+    let x = Tensor::new(HostBuffer::F32(vec![1.; 100]), Shape::new([100]));
+    let y = x.to_device(&backend).to_host();
+    assert_eq!(x, y);
   }
 }
   

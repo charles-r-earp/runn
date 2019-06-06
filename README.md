@@ -6,21 +6,14 @@ Provides a core implementation layer for Neural Networks and other computational
 [![Build Status](https://travis-ci.com/charles-r-earp/runn.svg?branch=master)](https://travis-ci.com/charles-r-earp/runn)
 
 # Status
-Experimental!!! Focusing on a proof of concept, api is not stable.
+Experimental!!! Rebuilt several times.
 
-Currently can setup and execute a Sigmoid op. Time is only lost copying the data into the Tensor, writing it to the device, and (possibly?) reconstructing the array. The break even point is about 100k on an NVIDIA GTX 1060 GPU. With a suffienctly long chain of ops, even small ones, this should be reduced.  
-
-Multithreading on the host side seems to be a no-go, run the tests with:
-
-    cargo test -- --test-threads 1
-    
-This will need to be addressed, with Arc or some other atomic structure. The backend is a static mut, which just gets copied to secondary threads. 
+Currently can create a net with a sigmoid activation function for f32. The backend is created once, which compiles the opencl code. Then a net can be constructed, and fed a vec of Tensor inputs. This is then loaded onto the device, then the layers of the net push their kernels into a Vec, which then is enqueued and processed all at once. Then the outputs are copied back to host Tensors and returned. 
 
 # Requirements 
-Install OpenCL such that clinfo lists a device. 
+Install OpenCL such that clinfo lists your device (gpu or cpu).
 
-# Goal
-Use emu to write OpenCL kernels, that are namespaced and compiled into a single binary by ocl, for one (or more) devices. A function can be evaluated with a set of inputs, entirely on the device, only writing the inputs and reading the outputs, all intermediate values are only allocated on the device. Compiling once, and minimizing reads and writes is critical to performance. 
+
 
 
 

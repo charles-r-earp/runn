@@ -6,17 +6,16 @@ env:
     - CRATE_NAME=runn
 install: 
   - sudo apt update
-  # pocl not working
-  #- sudo apt install -y ocl-opencl-icd libpcap-dev clinfo
-  #- clinfo
-  #- git clone https://github.com/pocl/pocl
-  #- cd pocl
-  #- mkdir build
-  #- cd build
-  #- cmake ..
-  #- sudo make install
-  #- ls /usr/lib/x86_64-unknown-linux-gnu
-  #- clinfo
+  - sudo apt install -y ocl-icd-opencl-dev clinfo
+  - clinfo
+  - git clone https://github.com/pocl/pocl
+  - cd pocl
+  - mkdir build
+  - cd build
+  - cmake ..
+  - sudo make install
+  - ls /usr/lib/x86_64-unknown-linux-gnu
+  - clinfo
   - source ~/.cargo/env || true
 language: rust
 env: TARGET=x86_64-unknown-linux-gnu
@@ -24,8 +23,7 @@ notifications:
   email: 
     on_success: never
 script:
-  # want to run tests here
-  # - cargo test 
-  - cargo build
-  - cargo build --release
+  - cargo test
+  - cargo run
+  - cargo run --release
 sudo: required

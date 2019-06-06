@@ -1,24 +1,26 @@
-use runn::{Backend, Tensor};
+use runn::{Backend, Shape, Tensor, HostBuffer, Net, activation::Sigmoid};
 use timeit::*;
 
 fn main() {
-  Backend::create();
-  let x = ndarray::Array1::<f32>::from_vec(vec![10.; 64*64]);
-  println!("opencl... no op");
+
+  let mut net = Net::new(Sigmoid::new());
+
+  let backend = Backend::new();
+  
+  let x = vec![1.5; 1024];
+  
+  println!("Device...");
   timeit!({
-    Tensor::from(x.view())
-     // .sigmoid()
-      .into_array();
+    let xs = vec![Tensor::new(HostBuffer::F32(x.clone()), Shape::new([1024]))]; 
+    net.eval(&backend, xs); 
   });
-  println!("opencl...");
+  
+  println!("Host...");
   timeit!({
-    Tensor::from(x.view())
-      .sigmoid()
-      .into_array();
-  });
-  println!("native...");
-  timeit!({
-    runn::activation::array_sigmoid(x.view());
+    x.iter()
+      .map(|&x| 1. / (1. + (-x).exp()))
+      .collect::<Vec<f32>>();
   });
 }
+
   
