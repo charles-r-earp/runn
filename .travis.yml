@@ -14,7 +14,6 @@ install:
   - cd build
   - cmake ..
   - sudo make install
-  - ls /usr/lib/x86_64-unknown-linux-gnu
   - clinfo
   - source ~/.cargo/env || true
 language: rust
