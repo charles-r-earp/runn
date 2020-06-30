@@ -5,7 +5,5 @@ authors = ["Charles R Earp <charles.r.earp@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-em = "0.1.3"
-ocl = "0.19.2"
-timeit = "0.1.2"
+
 
