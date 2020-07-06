@@ -1,7 +1,11 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/charles-r-earp/runn/LICENSE-MIT)
 
-# runn
-Implement in Rust, execute on cpu or gpu. 
+# unicl  
+Unified Compute Library for Rust
+
+# Goals
+  - Run single source Rust code on CPU's and GPU's 
+
 
 
 
